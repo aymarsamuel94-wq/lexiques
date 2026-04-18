@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0e1117">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Lexique">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<title>Lexique Juridique</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0e1117;--surface:#161b27;--card:#1c2333;--border:#252e42;--accent:#c9a96e;--accent2:#7eb8d4;--text:#e8eaf0;--muted:#7a8499;--green:#4caf82;--red:#e06060;--radius:14px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;touch-action:none;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;display:flex;flex-direction:column;}
+.header{background:linear-gradient(135deg,#111827,#1a2540);border-bottom:1px solid var(--border);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.logo{font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--accent);}
+.logo span{color:var(--muted);font-size:.65rem;font-weight:300;display:block;}
+.header-right{display:flex;gap:12px;align-items:center;}
+.stat{text-align:center;}
+.stat-val{font-size:1rem;font-weight:600;color:var(--accent);}
+.stat-lbl{font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
+.gear-btn{background:none;border:1px solid var(--border);color:var(--muted);width:32px;height:32px;border-radius:8px;font-size:.95rem;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;}
+.tab{flex:1;padding:11px 4px;border:none;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.76rem;cursor:pointer;font-weight:500;border-bottom:2px solid transparent;transition:all .2s;}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);background:rgba(201,169,110,.07);}
+.views-container{flex:1;overflow:hidden;position:relative;}
+.view{position:absolute;inset:0;overflow-y:auto;padding:18px 16px;-webkit-overflow-scrolling:touch;transition:transform .32s cubic-bezier(.4,0,.2,1);}
+.view.left{transform:translateX(-100%);}
+.view.active{transform:translateX(0);}
+.view.right{transform:translateX(100%);}
+
+/* FLASHCARD */
+.fc-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;}
+.progress-bar{width:100%;height:3px;background:var(--border);border-radius:99px;overflow:hidden;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:99px;transition:width .3s;}
+.progress-label{font-size:.72rem;color:var(--muted);align-self:flex-end;}
+.session-score{display:flex;gap:12px;}
+.score-box{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:7px 14px;text-align:center;}
+.score-box .val{font-size:1.15rem;font-weight:700;}
+.score-box .lbl{font-size:.62rem;color:var(--muted);text-transform:uppercase;}
+.score-box.g .val{color:var(--green);}
+.score-box.r .val{color:var(--red);}
+.card-scene{width:100%;position:relative;height:270px;overflow:hidden;border-radius:var(--radius);}
+.card-ghost{position:absolute;inset:0;border-radius:var(--radius);background:var(--card);border:1px solid var(--border);}
+.card-ghost:nth-child(1){transform:scale(.96) translateY(6px);opacity:.4;}
+.card-ghost:nth-child(2){transform:scale(.92) translateY(12px);opacity:.2;}
+.card-inner{position:absolute;inset:0;transform-style:preserve-3d;cursor:pointer;z-index:2;}
+.card-inner.flipped{transform:rotateY(180deg);}
+.card-inner.do-flip{transition:transform .42s cubic-bezier(.4,0,.2,1);}
+@keyframes exitL  {to{transform:translateX(-105%);}}
+@keyframes exitR  {to{transform:translateX( 105%);}}
+@keyframes enterR {from{transform:translateX( 105%);}to{transform:translateX(0);}}
+@keyframes enterL {from{transform:translateX(-105%);}to{transform:translateX(0);}}
+.exit-left  {animation:exitL  .28s cubic-bezier(.4,0,.2,1) forwards;}
+.exit-right {animation:exitR  .28s cubic-bezier(.4,0,.2,1) forwards;}
+.enter-right{animation:enterR .28s cubic-bezier(.4,0,.2,1) forwards;}
+.enter-left {animation:enterL .28s cubic-bezier(.4,0,.2,1) forwards;}
+.card-face{position:absolute;inset:0;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);backface-visibility:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px;text-align:center;user-select:none;}
+.card-face.back{transform:rotateY(180deg);}
+.card-tag{font-size:.63rem;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);font-weight:600;margin-bottom:10px;background:rgba(201,169,110,.12);padding:3px 10px;border-radius:20px;}
+.card-word{font-family:'Playfair Display',serif;font-size:1.8rem;color:var(--text);line-height:1.2;margin-bottom:6px;}
+.card-hint{font-size:.72rem;color:var(--muted);}
+.card-def{font-size:.86rem;color:var(--text);line-height:1.6;margin-bottom:12px;}
+.card-example{font-size:.78rem;color:var(--accent2);font-style:italic;line-height:1.5;border-left:2px solid var(--accent2);padding-left:10px;text-align:left;width:100%;}
+.drag-hint{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:2rem;font-weight:700;opacity:0;pointer-events:none;z-index:10;color:var(--accent);}
+.swipe-guide{display:flex;justify-content:space-between;width:100%;font-size:.68rem;color:var(--muted);padding:0 4px;}
+.fc-actions{display:flex;gap:10px;width:100%;}
+.fc-btn{flex:1;padding:11px 0;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer;transition:all .18s;}
+.fc-btn.wrong{background:rgba(224,96,96,.15);color:var(--red);border:1px solid rgba(224,96,96,.3);}
+.fc-btn.right{background:rgba(76,175,130,.15);color:var(--green);border:1px solid rgba(76,175,130,.3);}
+.fc-btn.flip{background:rgba(201,169,110,.12);color:var(--accent);border:1px solid rgba(201,169,110,.3);}
+.fc-nav{display:flex;gap:8px;}
+.nav-btn{background:var(--card);border:1px solid var(--border);color:var(--muted);padding:7px 13px;border-radius:8px;cursor:pointer;font-size:.78rem;font-family:'DM Sans',sans-serif;}
+
+/* LIST */
+.search-input{width:100%;background:var(--card);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.86rem;outline:none;margin-bottom:12px;display:block;}
+.search-input:focus{border-color:var(--accent);}
+.search-input::placeholder{color:var(--muted);}
+.word-list{display:flex;flex-direction:column;gap:8px;}
+.word-item{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:13px 15px;cursor:pointer;position:relative;user-select:none;transition:background .12s,border-color .12s;}
+.word-item.mastered{border-left:3px solid var(--green);}
+.word-item.learning{border-left:3px solid var(--red);}
+.word-item.custom-word{border-left:3px solid var(--accent2);}
+.word-item.pressing{background:rgba(201,169,110,.09);border-color:rgba(201,169,110,.35);}
+.word-header{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.word-name{font-family:'Playfair Display',serif;font-size:.98rem;color:var(--text);flex:1;}
+.word-badge{font-size:.6rem;text-transform:uppercase;letter-spacing:.1em;padding:2px 7px;border-radius:20px;font-weight:600;white-space:nowrap;}
+.badge-ok{background:rgba(76,175,130,.15);color:var(--green);}
+.badge-ko{background:rgba(224,96,96,.12);color:var(--red);}
+.badge-new{background:rgba(201,169,110,.12);color:var(--accent);}
+.badge-custom{background:rgba(126,184,212,.12);color:var(--accent2);}
+.word-body{display:none;margin-top:10px;}
+.word-body.open{display:block;}
+.word-def{font-size:.83rem;color:var(--text);line-height:1.6;margin-bottom:6px;}
+.word-ex{font-size:.78rem;color:var(--accent2);font-style:italic;border-left:2px solid rgba(126,184,212,.4);padding-left:10px;line-height:1.5;}
+.ctx-overlay{position:fixed;inset:0;z-index:299;display:none;}
+.ctx-menu{position:fixed;z-index:300;background:var(--surface);border:1px solid var(--border);border-radius:12px;min-width:180px;box-shadow:0 8px 32px rgba(0,0,0,.55);overflow:hidden;display:none;}
+@keyframes ctxIn{from{opacity:0;transform:scale(.93);}to{opacity:1;transform:scale(1);}}
+.ctx-menu.open{display:block;animation:ctxIn .13s ease;}
+.ctx-item{padding:13px 18px;font-size:.88rem;cursor:pointer;display:flex;align-items:center;gap:10px;transition:background .12s;}
+.ctx-item:hover{background:rgba(255,255,255,.06);}
+.ctx-item.danger{color:var(--red);}
+
+/* QUIZ */
+.quiz-wrap{display:flex;flex-direction:column;gap:14px;align-items:center;}
+.quiz-question{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px 18px;width:100%;text-align:center;}
+.quiz-label{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;}
+.quiz-word{font-family:'Playfair Display',serif;font-size:1.7rem;color:var(--accent);}
+.quiz-choices{display:flex;flex-direction:column;gap:9px;width:100%;}
+.choice-btn{background:var(--card);border:1px solid var(--border);color:var(--text);padding:13px 14px;border-radius:10px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.82rem;text-align:left;line-height:1.5;transition:all .15s;}
+.choice-btn:hover:not(:disabled){border-color:var(--accent);background:rgba(201,169,110,.06);}
+.choice-btn.correct{border-color:var(--green);background:rgba(76,175,130,.12);color:var(--green);}
+.choice-btn.wrong-ans{border-color:var(--red);background:rgba(224,96,96,.10);color:var(--red);}
+.choice-btn:disabled{cursor:default;}
+.quiz-next{background:linear-gradient(135deg,var(--accent),#b8894a);color:#1a1200;border:none;padding:11px 28px;border-radius:10px;font-family:'DM Sans',sans-serif;font-weight:700;font-size:.88rem;cursor:pointer;display:none;}
+.quiz-next.show{display:inline-block;}
+.quiz-result{text-align:center;padding:36px 16px;}
+.result-big{font-family:'Playfair Display',serif;font-size:2.6rem;color:var(--accent);}
+.result-sub{color:var(--muted);margin-top:6px;}
+.restart-btn{margin-top:18px;background:var(--card);border:1px solid var(--accent);color:var(--accent);padding:10px 22px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.86rem;cursor:pointer;}
+
+/* SETTINGS */
+.overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.72);backdrop-filter:blur(4px);align-items:flex-end;}
+.overlay.open{display:flex;}
+.settings-panel{background:var(--surface);border-top:1px solid var(--border);border-radius:20px 20px 0 0;width:100%;padding:22px 18px 40px;max-height:92vh;overflow-y:auto;}
+.panel-handle{width:40px;height:4px;background:var(--border);border-radius:99px;margin:0 auto 18px;}
+.panel-title{font-family:'Playfair Display',serif;font-size:1.15rem;color:var(--accent);margin-bottom:18px;}
+.section-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:9px;margin-top:18px;}
+.notif-row{display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:13px 15px;margin-bottom:9px;}
+.notif-name{font-size:.88rem;font-weight:500;}
+.notif-sub{font-size:.72rem;color:var(--muted);margin-top:2px;}
+.toggle{position:relative;width:44px;height:24px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;}
+.slider{position:absolute;inset:0;background:var(--border);border-radius:99px;cursor:pointer;transition:.3s;}
+.slider:before{content:'';position:absolute;width:18px;height:18px;background:#fff;border-radius:50%;left:3px;top:3px;transition:.3s;}
+input:checked+.slider{background:var(--accent);}
+input:checked+.slider:before{transform:translateX(20px);}
+.interval-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;}
+.interval-label{font-size:.84rem;flex:1;}
+.interval-select{background:var(--card);border:1px solid var(--border);color:var(--text);padding:7px 11px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.83rem;outline:none;}
+.add-form{display:flex;flex-direction:column;gap:9px;margin-top:6px;}
+.add-input,.add-textarea{background:var(--card);border:1px solid var(--border);color:var(--text);padding:10px 13px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.86rem;outline:none;transition:border-color .2s;width:100%;}
+.add-input:focus,.add-textarea:focus{border-color:var(--accent);}
+.add-input::placeholder,.add-textarea::placeholder{color:var(--muted);}
+.add-textarea{resize:none;height:64px;line-height:1.5;}
+.add-btn{background:linear-gradient(135deg,var(--accent),#b8894a);color:#1a1200;border:none;padding:11px;border-radius:10px;font-family:'DM Sans',sans-serif;font-weight:700;font-size:.88rem;cursor:pointer;}
+.add-feedback{font-size:.78rem;color:var(--green);text-align:center;min-height:16px;}
+.banner{background:rgba(201,169,110,.12);border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:11px 14px;font-size:.8rem;line-height:1.5;display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.banner-btn{background:var(--accent);color:#1a1200;border:none;padding:5px 12px;border-radius:7px;font-family:'DM Sans',sans-serif;font-weight:700;font-size:.78rem;cursor:pointer;white-space:nowrap;}
+.test-btn{width:100%;padding:11px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.85rem;cursor:pointer;margin-top:4px;}
+.reset-btn{width:100%;padding:11px;background:var(--card);border:1px solid rgba(224,96,96,.3);color:var(--red);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.85rem;cursor:pointer;margin-top:4px;}
+.notif-preview{background:#1a1e2a;border:1px solid #2a3050;border-radius:14px;padding:14px 16px;margin-top:6px;}
+.np-app{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.np-icon{width:26px;height:26px;border-radius:7px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-weight:700;font-size:.85rem;color:#1a1200;}
+.np-appname{font-size:.72rem;color:#aaa;}
+.np-time{font-size:.68rem;color:#555;margin-left:auto;}
+.np-title{font-size:.92rem;font-weight:600;color:#fff;margin-bottom:4px;}
+.np-body{font-size:.78rem;color:#aaa;line-height:1.5;}
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="logo">Lexique Juridique<span>Programme Samuel · 6 mois</span></div>
+  <div class="header-right">
+    <div class="stat"><div class="stat-val" id="masteredCount" style="color:var(--green)">0</div><div class="stat-lbl">✓ Sus</div></div>
+    <div class="stat"><div class="stat-val" id="totalCount">79</div><div class="stat-lbl">Mots</div></div>
+    <button class="gear-btn" onclick="openSettings()">⚙️</button>
+  </div>
+</header>
+<nav class="tabs">
+  <button class="tab active" onclick="switchTab(0)">🃏 Flashcards</button>
+  <button class="tab"        onclick="switchTab(1)">📋 Liste</button>
+  <button class="tab"        onclick="switchTab(2)">🎯 Quiz</button>
+</nav>
+<div class="views-container" id="viewsContainer">
+  <div class="view active" id="view-0">
+    <div class="fc-wrap">
+      <div style="width:100%;"><div class="progress-bar"><div class="progress-fill" id="fcProgress" style="width:1%"></div></div></div>
+      <div class="progress-label" id="fcLabel">1 / 79</div>
+      <div class="session-score">
+        <div class="score-box g"><div class="val" id="fcGood">0</div><div class="lbl">✓ Sus</div></div>
+        <div class="score-box r"><div class="val" id="fcBad">0</div><div class="lbl">↺ Revoir</div></div>
+      </div>
+      <div class="card-scene" id="cardScene">
+        <div class="card-ghost"></div>
+        <div class="card-ghost"></div>
+        <div class="card-inner" id="cardInner">
+          <div class="drag-hint" id="dragHint"></div>
+          <div class="card-face front">
+            <div class="card-tag">Terme juridique</div>
+            <div class="card-word" id="cardWord"></div>
+            <div class="card-hint">Touchez pour voir · Glissez pour défiler</div>
+          </div>
+          <div class="card-face back">
+            <div class="card-def" id="cardDef"></div>
+            <div class="card-example" id="cardEx"></div>
+          </div>
+        </div>
+      </div>
+      <div class="swipe-guide"><span>← Précédent</span><span style="font-size:.65rem;">Tap = retourner</span><span>Suivant →</span></div>
+      <div class="fc-actions">
+        <button class="fc-btn wrong" onclick="markCard(false)">✗ À revoir</button>
+        <button class="fc-btn flip"  onclick="doFlip()">↻ Retourner</button>
+        <button class="fc-btn right" onclick="markCard(true)">✓ Je sais</button>
+      </div>
+      <div class="fc-nav">
+        <button class="nav-btn" onclick="goPrev()">← Préc.</button>
+        <button class="nav-btn" onclick="shuffleCards()">⇄ Mélanger</button>
+        <button class="nav-btn" onclick="goNext()">Suiv. →</button>
+      </div>
+    </div>
+  </div>
+  <div class="view right" id="view-1">
+    <input class="search-input" type="text" placeholder="Rechercher…" id="searchInput" oninput="filterList()">
+    <div class="word-list" id="wordList"></div>
+  </div>
+  <div class="view right" id="view-2">
+    <div class="quiz-wrap" id="quizWrap"></div>
+  </div>
+</div>
+
+<div class="overlay" id="settingsOverlay" onclick="closeSettingsOutside(event)">
+  <div class="settings-panel">
+    <div class="panel-handle"></div>
+    <div class="panel-title">⚙️ Paramètres</div>
+    <div id="notifBanner" class="banner" style="display:none;">
+      📳 Autorise les notifications pour recevoir des rappels.
+      <button class="banner-btn" onclick="requestNotifPermission()">Autoriser</button>
+    </div>
+    <div class="section-label">👁 Aperçu notification</div>
+    <div class="notif-preview">
+      <div class="np-app"><div class="np-icon">J</div><div class="np-appname">Lexique Juridique</div><div class="np-time">maintenant</div></div>
+      <div class="np-title" id="npTitle">📚 Plaidoirie</div>
+      <div class="np-body" id="npBody">Exposé oral d'un avocat devant le tribunal. · « L'avocat a commencé sa plaidoirie avec un argument convaincant. »</div>
+    </div>
+    <div class="section-label">🔔 Notifications</div>
+    <div class="notif-row">
+      <div><div class="notif-name">Rappels activés</div><div class="notif-sub">Mot aléatoire à intervalles programmés</div></div>
+      <label class="toggle"><input type="checkbox" id="notifEnabled" onchange="saveSettings()"><span class="slider"></span></label>
+    </div>
+    <div class="interval-row">
+      <span class="interval-label">Intervalle</span>
+      <select class="interval-select" id="notifInterval" onchange="saveSettings()">
+        <option value="10">10 min</option><option value="15">15 min</option><option value="30">30 min</option>
+        <option value="60" selected>1 heure</option><option value="120">2 heures</option>
+        <option value="180">3 heures</option><option value="240">4 heures</option><option value="480">8 heures</option>
+      </select>
+    </div>
+    <div class="notif-row">
+      <div><div class="notif-name">Priorité aux mots à revoir</div><div class="notif-sub">Envoie d'abord les mots marqués ↺</div></div>
+      <label class="toggle"><input type="checkbox" id="notifPrioKo" onchange="saveSettings()"><span class="slider"></span></label>
+    </div>
+    <button class="test-btn" onclick="sendTestNotif()">📳 Tester une notification maintenant</button>
+    <div class="section-label">➕ Ajouter un mot personnel</div>
+    <div class="add-form">
+      <input class="add-input" id="newWord" placeholder="Mot ou expression…" maxlength="80">
+      <textarea class="add-textarea" id="newDef" placeholder="Définition…" maxlength="300"></textarea>
+      <textarea class="add-textarea" id="newEx" placeholder="Exemple de phrase…" maxlength="300"></textarea>
+      <button class="add-btn" onclick="addCustomWord()">Ajouter au lexique</button>
+      <div class="add-feedback" id="addFeedback"></div>
+    </div>
+    <div class="section-label">🗑️ Réinitialisation</div>
+    <button class="reset-btn" onclick="resetProgress()">Réinitialiser ma progression</button>
+  </div>
+</div>
+
+<div class="ctx-overlay" id="ctxOverlay" onclick="closeCtxMenu()"></div>
+<div class="ctx-menu" id="ctxMenu">
+  <div class="ctx-item danger" onclick="confirmDelete()">🗑 Supprimer ce mot</div>
+  <div class="ctx-item" onclick="closeCtxMenu()">✕ Annuler</div>
+</div>
+
+<script>
+const BASE_WORDS=[
+  {word:"Procédure",definition:"Ensemble de règles à suivre pour qu'une action judiciaire soit valide.",example:"Il faut respecter la procédure pour que le jugement soit reconnu."},
+  {word:"Requête",definition:"Demande formelle adressée à un juge ou à une autorité pour obtenir une décision ou un acte.",example:"L'avocat a déposé une requête pour demander l'annulation du contrat."},
+  {word:"Appel",definition:"Recours contre un jugement rendu par un tribunal, pour qu'une juridiction supérieure le réexamine.",example:"Le défendeur a fait appel du jugement rendu par le tribunal de première instance."},
+  {word:"Cassation",definition:"Recours devant la plus haute juridiction pour annuler un jugement en raison d'une erreur de droit.",example:"L'avocat a demandé la cassation de l'arrêt rendu par la cour d'appel."},
+  {word:"Recours",definition:"Action entreprise pour contester une décision judiciaire ou administrative.",example:"Le citoyen a formé un recours contre la décision du tribunal administratif."},
+  {word:"Arrêt",definition:"Décision rendue par une cour (ex. cour d'appel ou cour de cassation).",example:"La cour d'appel a rendu son arrêt hier matin."},
+  {word:"Audience",definition:"Séance au cours de laquelle le tribunal examine les affaires et entend les parties.",example:"L'audience a commencé à 9 heures précises avec tous les témoins présents."},
+  {word:"Plaidoirie",definition:"Exposé oral d'un avocat devant le tribunal pour défendre son client.",example:"L'avocat a commencé sa plaidoirie avec un argument convaincant."},
+  {word:"Instruction",definition:"Phase d'enquête judiciaire où le juge rassemble les preuves avant le procès.",example:"Le juge d'instruction a ouvert une instruction pour vérifier les faits."},
+  {word:"Délibération",definition:"Discussion et réflexion des juges ou du jury avant de rendre une décision.",example:"Après plusieurs heures de délibération, le jury a rendu son verdict."},
+  {word:"Verdict",definition:"Décision finale rendue par le juge ou le jury dans une affaire.",example:"Le verdict a été annoncé à midi dans la salle d'audience."},
+  {word:"Condamnation",definition:"Décision de justice qui inflige une peine à une personne reconnue coupable.",example:"Le tribunal a prononcé une condamnation de six mois de prison."},
+  {word:"Relaxe",definition:"Décision judiciaire par laquelle l'accusé est déclaré non coupable.",example:"Après l'examen des preuves, le tribunal a prononcé la relaxe de l'accusé."},
+  {word:"Acquittement",definition:"Décision judiciaire qui déclare l'accusé innocent et met fin aux poursuites.",example:"L'accusé a été libéré après son acquittement par la cour d'assises."},
+  {word:"Saisine",definition:"Action de saisir officiellement un juge ou une juridiction pour qu'il examine une affaire.",example:"Le citoyen a effectué la saisine du tribunal pour contester la décision administrative."},
+  {word:"Notification",definition:"Action d'informer officiellement une personne d'une décision ou d'un acte juridique.",example:"Le tribunal a procédé à la notification du jugement au défendeur."},
+  {word:"Comparution",definition:"Action de se présenter devant un tribunal, généralement après une assignation ou une convocation.",example:"L'accusé a comparu devant le tribunal à la date indiquée."},
+  {word:"Audience publique",definition:"Séance du tribunal ouverte à tous, où les débats se déroulent devant le public.",example:"Le procès s'est tenu en audience publique conformément à la loi."},
+  {word:"Injonction",definition:"Ordre donné par un juge à une personne ou une organisation de faire ou de ne pas faire quelque chose.",example:"Le tribunal a émis une injonction pour que le locataire quitte les lieux."},
+  {word:"Sursis",definition:"Suspension ou report de l'exécution d'une peine prononcée par le tribunal.",example:"Le juge a accordé un sursis à l'accusé, qui ne sera exécuté qu'en cas de récidive."},
+  {word:"Recours gracieux",definition:"Demande adressée à l'autorité qui a pris une décision pour qu'elle la revoie avant toute action judiciaire.",example:"Le citoyen a déposé un recours gracieux pour contester la décision administrative."},
+  {word:"Recours hiérarchique",definition:"Demande adressée au supérieur hiérarchique de l'autorité qui a pris une décision pour qu'elle la revoie.",example:"Le fonctionnaire a exercé un recours hiérarchique pour contester la sanction reçue."},
+  {word:"Procédure pénale",definition:"Ensemble des règles qui organisent le traitement des infractions (crimes, délits).",example:"La procédure pénale a été respectée depuis l'arrestation jusqu'au jugement."},
+  {word:"Mise en examen",definition:"Décision d'un juge d'instruction de poursuivre officiellement une personne soupçonnée d'une infraction.",example:"Il a été placé en mise en examen après les premières investigations."},
+  {word:"Mandat",definition:"Ordre donné par une autorité judiciaire pour accomplir un acte (arrêter, perquisitionner, etc.).",example:"Le juge a délivré un mandat pour arrêter le suspect."},
+  {word:"Citation directe",definition:"Procédure permettant de convoquer directement une personne devant le tribunal sans passer par une enquête approfondie.",example:"La victime a engagé une citation directe contre l'auteur présumé."},
+  {word:"Commission rogatoire",definition:"Mission confiée par un juge à une autre autorité (souvent la police) pour effectuer des actes d'enquête.",example:"Le juge a délivré une commission rogatoire pour approfondir l'enquête."},
+  {word:"Prescription",definition:"Expiration d'un droit ou d'une action en justice après un certain temps.",example:"L'action en justice est éteinte en raison de la prescription."},
+  {word:"Transaction",definition:"Accord conclu entre parties pour mettre fin à un litige ou éviter un procès.",example:"Les deux entreprises ont signé une transaction pour régler le conflit."},
+  {word:"Médiation",definition:"Procédure où une tierce personne aide les parties à trouver un accord amiable sans passer par le tribunal.",example:"Le juge a proposé une médiation avant de fixer la date du procès."},
+  {word:"Conciliation",definition:"Procédure amiable visant à résoudre un litige avec l'aide d'un conciliateur.",example:"Avant de poursuivre, les parties ont tenté une conciliation."},
+  {word:"Acte juridique",definition:"Document ou action produisant des effets de droit.",example:"Le contrat signé est un acte juridique qui engage les parties."},
+  {word:"Nullité",definition:"Situation où un acte juridique est considéré comme invalide et sans effet.",example:"Le contrat a été annulé pour cause de nullité."},
+  {word:"Force majeure",definition:"Événement imprévisible et irrésistible qui empêche l'exécution d'un contrat ou d'une obligation.",example:"La société n'a pas pu livrer les marchandises à cause d'une force majeure : une inondation."},
+  {word:"Responsabilité civile",definition:"Obligation de réparer le dommage causé à autrui, qu'il soit matériel ou moral.",example:"L'entreprise a été condamnée à verser des indemnités pour sa responsabilité civile."},
+  {word:"Clause",definition:"Disposition particulière dans un contrat précisant un droit, une obligation ou une condition.",example:"La clause du contrat stipule que le paiement doit être effectué dans les 30 jours."},
+  {word:"Cession",definition:"Transfert d'un droit, d'une créance ou d'un bien d'une personne à une autre.",example:"La société a procédé à la cession de ses parts à un investisseur."},
+  {word:"Usufruit",definition:"Droit de jouir d'un bien dont une autre personne a la propriété, tout en en respectant la substance.",example:"Le grand-parent a donné l'usufruit de sa maison à son fils."},
+  {word:"Saisie",definition:"Procédure permettant à un créancier de prendre légalement les biens d'un débiteur pour obtenir le paiement d'une dette.",example:"Le tribunal a autorisé la saisie du compte bancaire du débiteur."},
+  {word:"Créance",definition:"Droit d'exiger d'une personne le paiement d'une somme d'argent ou l'exécution d'une obligation.",example:"L'entreprise a inscrit la créance dans ses comptes clients."},
+  {word:"Débiteur",definition:"Personne qui doit de l'argent ou qui est tenue d'exécuter une obligation envers une autre.",example:"Le débiteur doit rembourser la somme avant la date prévue."},
+  {word:"Créancier",definition:"Personne à qui une dette est due, et qui peut en exiger le paiement.",example:"Le créancier a engagé une procédure pour récupérer son argent."},
+  {word:"Indemnisation",definition:"Somme d'argent versée pour réparer un dommage ou un préjudice.",example:"La victime a obtenu une indemnisation après le jugement."},
+  {word:"Préjudice",definition:"Dommage subi par une personne, qu'il soit matériel, moral ou physique.",example:"Il a subi un préjudice important après la rupture du contrat."},
+  {word:"Contravention",definition:"Infraction la moins grave prévue par la loi, sanctionnée par une amende.",example:"Il a reçu une contravention pour excès de vitesse."},
+  {word:"Délit",definition:"Infraction intermédiaire entre la contravention et le crime, punie par une peine d'emprisonnement ou une amende plus importante.",example:"Le vol à main armée est considéré comme un délit."},
+  {word:"Arbitrage",definition:"Procédure par laquelle les parties confient la résolution d'un litige à un arbitre ou un tribunal arbitral, en dehors des juridictions étatiques.",example:"Les entreprises ont choisi l'arbitrage pour résoudre leur différend commercial."},
+  {word:"Clause compromissoire",definition:"Clause d'un contrat par laquelle les parties s'engagent à recourir à l'arbitrage en cas de litige.",example:"Le contrat inclut une clause compromissoire pour éviter un procès devant les tribunaux."},
+  {word:"Recours contentieux",definition:"Action en justice entreprise pour contester une décision administrative ou judiciaire devant un tribunal.",example:"Le citoyen a introduit un recours contentieux contre la décision de la mairie."},
+  {word:"Acte authentique",definition:"Acte rédigé et signé par un officier public (ex. notaire), ayant force probante et exécutoire.",example:"Le contrat de vente a été signé en acte authentique chez le notaire."},
+  {word:"Résiliation",definition:"Action de mettre fin à un contrat avant son terme prévu.",example:"Le client a demandé la résiliation du contrat d'abonnement."},
+  {word:"Révocation",definition:"Action d'annuler ou de retirer une décision, un acte ou un mandat.",example:"La révocation du mandat a été décidée par le client."},
+  {word:"Caducité",definition:"Perte de validité d'un acte juridique en raison de la disparition d'un élément essentiel.",example:"Le contrat est devenu caduc après la disparition de son objet."},
+  {word:"Sentence",definition:"Décision prononcée par un tribunal fixant la peine ou la solution d'un litige.",example:"La sentence a été prononcée à l'issue du procès."},
+  {word:"Relaxation",definition:"Décision de justice déclarant une personne non coupable en matière pénale (contravention ou délit).",example:"Le prévenu a obtenu la relaxation faute de preuves suffisantes."},
+  {word:"Présomption d'innocence",definition:"Principe juridique selon lequel toute personne est considérée comme innocente tant qu'elle n'a pas été déclarée coupable par un tribunal.",example:"Il bénéficie de la présomption d'innocence jusqu'au jugement final."},
+  {word:"Chef d'accusation",definition:"Motif précis pour lequel une personne est poursuivie devant la justice.",example:"Le chef d'accusation retenu est le vol aggravé."},
+  {word:"Mise en demeure",definition:"Acte par lequel une personne demande officiellement à une autre d'exécuter une obligation dans un délai précis.",example:"Une mise en demeure a été envoyée avant toute action en justice."},
+  {word:"Vice du consentement",definition:"Défaut qui affecte la validité du consentement et peut entraîner l'annulation d'un contrat.",example:"Le contrat a été annulé pour vice du consentement."},
+  {word:"Dol",definition:"Tromperie intentionnelle destinée à induire une personne en erreur pour obtenir son consentement.",example:"Le contrat a été annulé pour dol."},
+  {word:"Violence (juridique)",definition:"Pression physique ou morale exercée sur une personne pour obtenir son consentement à un acte juridique.",example:"Le contrat a été annulé pour violence morale."},
+  {word:"Résiliation judiciaire",definition:"Fin d'un contrat prononcée par un juge à la demande d'une partie, en raison d'un manquement grave de l'autre partie.",example:"Le juge a prononcé la résiliation judiciaire du contrat."},
+  {word:"Responsabilité pénale",definition:"Obligation de répondre devant la justice pénale lorsqu'on commet une infraction.",example:"Sa responsabilité pénale a été engagée pour vol."},
+  {word:"Infraction pénale",definition:"Comportement interdit par la loi pénale et sanctionné par une peine.",example:"Le vol est une infraction pénale."},
+  {word:"Juridiction",definition:"Organe chargé de rendre la justice (tribunal ou cour).",example:"Cette juridiction est compétente pour juger l'affaire."},
+  {word:"Contentieux",definition:"Ensemble des litiges portés ou susceptibles d'être portés devant une juridiction.",example:"Un contentieux oppose les deux entreprises depuis plusieurs années."},
+  {word:"Clause abusive",definition:"Disposition contractuelle qui crée un déséquilibre significatif entre les droits et obligations des parties, au détriment de l'une d'elles.",example:"Cette clause a été jugée abusive par le tribunal."},
+  {word:"Cas fortuit",definition:"Événement imprévu qui empêche l'exécution d'une obligation sans faute de la personne concernée.",example:"L'inexécution est due à un cas fortuit."},
+  {word:"Présomption",definition:"Règle selon laquelle un fait est tenu pour vrai jusqu'à preuve du contraire.",example:"Il existe une présomption d'innocence en droit pénal."},
+  {word:"Aveu",definition:"Déclaration par laquelle une personne reconnaît avoir commis un fait ou une infraction.",example:"L'aveu du suspect a facilité l'enquête."},
+  {word:"Alibi",definition:"Preuve ou justification montrant qu'une personne était ailleurs au moment des faits reprochés.",example:"Son alibi a permis de l'innocenter."},
+  {word:"Assignation",definition:"Acte juridique par lequel une personne est appelée à comparaître devant un tribunal.",example:"Il a reçu une assignation devant le tribunal."},
+  {word:"Prévenu",definition:"Personne soupçonnée d'une infraction et qui doit répondre devant un tribunal correctionnel.",example:"Le prévenu a comparu devant le juge."},
+  {word:"Audition",definition:"Entretien au cours duquel une personne est entendue par la police, un juge ou une autorité dans le cadre d'une enquête.",example:"Le témoin a été entendu en audition."},
+  {word:"Réhabilitation",definition:"Mesure juridique qui efface certaines conséquences d'une condamnation après un certain temps et un bon comportement.",example:"Sa réhabilitation lui a permis de retrouver ses droits."},
+  {word:"Délibéré",definition:"Période pendant laquelle les juges se retirent pour réfléchir avant de rendre leur décision.",example:"Le jugement sera rendu après le délibéré."},
+  {word:"Jurisprudence",definition:"Ensemble des décisions de justice qui servent de référence pour interpréter la loi.",example:"La jurisprudence a évolué sur cette question."},
+  {word:"État de droit",definition:"Système dans lequel toutes les personnes, y compris les autorités, sont soumises à la loi.",example:"L'État de droit garantit l'égalité devant la loi."},
+  {word:"Acte intentionnel",definition:"Acte commis volontairement, avec la volonté de produire un résultat interdit par la loi.",example:"C'était un acte intentionnel."}
+];
+
+const LS={
+  custom:()=>{try{return JSON.parse(localStorage.getItem('jur_custom')||'[]');}catch(e){return[];}},
+  saveCustom:a=>localStorage.setItem('jur_custom',JSON.stringify(a)),
+  deleted:()=>{try{return JSON.parse(localStorage.getItem('jur_deleted')||'[]');}catch(e){return[];}},
+  saveDeleted:a=>localStorage.setItem('jur_deleted',JSON.stringify(a)),
+  status:()=>{try{return JSON.parse(localStorage.getItem('jur_status3')||'{}');}catch(e){return{};}},
+  saveStatus:s=>localStorage.setItem('jur_status3',JSON.stringify(s)),
+  settings:()=>{try{return JSON.parse(localStorage.getItem('jur_settings')||'{}');}catch(e){return{};}},
+  saveSettings:s=>localStorage.setItem('jur_settings',JSON.stringify(s))
+};
+let STATUS=LS.status(), SETTINGS=LS.settings(), notifTimer=null;
+
+function getAllWords(){const d=LS.deleted();return[...BASE_WORDS.filter((_,i)=>!d.includes(i)),...LS.custom()];}
+
+function updateHeaderStats(){
+  const all=getAllWords();let m=0;
+  all.forEach((_,i)=>{if(STATUS[i]==='ok')m++;});
+  document.getElementById('masteredCount').textContent=m;
+  document.getElementById('totalCount').textContent=all.length;
+  const w=all[Math.floor(Math.random()*all.length)];
+  if(w){document.getElementById('npTitle').textContent='📚 '+w.word;document.getElementById('npBody').textContent=w.definition+' · « '+w.example+' »';}
+}
+
+// TABS
+let currentTab=0;
+function switchTab(idx){
+  document.querySelectorAll('.view').forEach((v,i)=>{v.classList.remove('left','active','right');if(i<idx)v.classList.add('left');else if(i===idx)v.classList.add('active');else v.classList.add('right');});
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===idx));
+  currentTab=idx;
+  if(idx===1)renderList();if(idx===2)startQuiz();if(idx===0){fcAnimating=false;renderCard();}
+}
+let hTx=0,hTy=0,hOnCard=false;
+document.getElementById('viewsContainer').addEventListener('touchstart',e=>{hTx=e.touches[0].clientX;hTy=e.touches[0].clientY;hOnCard=!!e.target.closest('#cardScene');},{passive:true});
+document.getElementById('viewsContainer').addEventListener('touchend',e=>{
+  if(hOnCard)return;
+  const dx=e.changedTouches[0].clientX-hTx,dy=e.changedTouches[0].clientY-hTy;
+  if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.4){if(dx<0&&currentTab<2)switchTab(currentTab+1);else if(dx>0&&currentTab>0)switchTab(currentTab-1);}
+},{passive:true});
+
+// FLASHCARD
+let fcIndex=0,fcOrder=[],fcFlipped=false,fcGood=0,fcBad=0,fcAnimating=false;
+function initFC(){const all=getAllWords();fcOrder=[...Array(all.length).keys()];fcGood=0;fcBad=0;fcFlipped=false;fcAnimating=false;document.getElementById('fcGood').textContent=0;document.getElementById('fcBad').textContent=0;renderCard();}
+function renderCard(){
+  const all=getAllWords();if(!fcOrder.length)fcOrder=[...Array(all.length).keys()];
+  const w=all[fcOrder[fcIndex%fcOrder.length]];
+  document.getElementById('cardWord').textContent=w.word;document.getElementById('cardDef').textContent=w.definition;document.getElementById('cardEx').textContent=w.example;
+  const pos=fcIndex%fcOrder.length;document.getElementById('fcLabel').textContent=`${pos+1} / ${fcOrder.length}`;document.getElementById('fcProgress').style.width=((pos+1)/fcOrder.length*100)+'%';
+  fcFlipped=false;const ci=document.getElementById('cardInner');if(ci){ci.classList.remove('flipped','do-flip','exit-left','exit-right','enter-right','enter-left');ci.style.transform='';}
+}
+function doFlip(){if(fcAnimating)return;fcFlipped=!fcFlipped;const ci=document.getElementById('cardInner');ci.classList.remove('do-flip');void ci.offsetWidth;ci.classList.add('do-flip');ci.classList.toggle('flipped',fcFlipped);}
+
+function makeCardHTML(w){
+  return`<div class="drag-hint" id="dragHint"></div><div class="card-face front"><div class="card-tag">Terme juridique</div><div class="card-word" id="cardWord">${w.word}</div><div class="card-hint">Touchez pour voir · Glissez pour défiler</div></div><div class="card-face back"><div class="card-def" id="cardDef">${w.definition}</div><div class="card-example" id="cardEx">${w.example}</div></div>`;
+}
+
+function slideCards(dir){
+  if(fcAnimating)return;fcAnimating=true;
+  const scene=document.getElementById('cardScene');
+  const outCard=document.getElementById('cardInner');
+  if(dir==='next'){fcIndex++;if(fcIndex>=fcOrder.length)fcIndex=0;}
+  else{fcIndex--;if(fcIndex<0)fcIndex=fcOrder.length-1;}
+  const all=getAllWords();const w=all[fcOrder[fcIndex%fcOrder.length]];
+  const inCard=document.createElement('div');
+  inCard.className='card-inner '+(dir==='next'?'enter-right':'enter-left');
+  inCard.innerHTML=makeCardHTML(w);
+  scene.appendChild(inCard);
+  outCard.classList.add(dir==='next'?'exit-left':'exit-right');
+  setTimeout(()=>{
+    outCard.remove();inCard.id='cardInner';inCard.classList.remove('enter-right','enter-left');inCard.style.transform='';
+    const pos=fcIndex%fcOrder.length;document.getElementById('fcLabel').textContent=`${pos+1} / ${fcOrder.length}`;document.getElementById('fcProgress').style.width=((pos+1)/fcOrder.length*100)+'%';
+    fcFlipped=false;fcAnimating=false;bindCardTouch();
+  },290);
+}
+function goNext(){slideCards('next');}
+function goPrev(){slideCards('prev');}
+function markCard(good){const idx=fcOrder[fcIndex%fcOrder.length];STATUS[idx]=good?'ok':'ko';LS.saveStatus(STATUS);updateHeaderStats();if(good){fcGood++;document.getElementById('fcGood').textContent=fcGood;}else{fcBad++;document.getElementById('fcBad').textContent=fcBad;}goNext();}
+function shuffleCards(){const all=getAllWords();fcOrder=[...Array(all.length).keys()].sort(()=>Math.random()-.5);fcIndex=0;fcAnimating=false;renderCard();}
+
+function bindCardTouch(){
+  const el=document.getElementById('cardInner');if(!el)return;
+  let tx=0,ty=0,axis=null,moved=false;
+  el.addEventListener('touchstart',e=>{tx=e.touches[0].clientX;ty=e.touches[0].clientY;axis=null;moved=false;el.style.transition='none';},{passive:true});
+  el.addEventListener('touchmove',e=>{
+    if(fcAnimating)return;
+    const dx=e.touches[0].clientX-tx,dy=e.touches[0].clientY-ty;
+    if(!axis){if(Math.abs(dx)>10&&Math.abs(dx)>Math.abs(dy))axis='h';else if(Math.abs(dy)>10)axis='v';}
+    if(axis==='h'){
+      e.preventDefault();moved=true;el.style.transform=`translateX(${dx*0.5}px)`;
+      const h=document.getElementById('dragHint');
+      if(h){if(dx>20){h.textContent='→';h.style.opacity=Math.min(1,(dx-20)/70)+'';}else if(dx<-20){h.textContent='←';h.style.opacity=Math.min(1,(-dx-20)/70)+'';}else h.style.opacity='0';}
+    }
+  },{passive:false});
+  el.addEventListener('touchend',e=>{
+    const h=document.getElementById('dragHint');if(h)h.style.opacity='0';el.style.transform='';
+    if(fcAnimating)return;
+    const dx=e.changedTouches[0].clientX-tx;
+    if(axis==='h'&&Math.abs(dx)>55){if(dx<0)goNext();else goPrev();}
+    else if(!moved){doFlip();}
+    else{el.style.transition='transform .15s ease';el.style.transform='';setTimeout(()=>el.style.transition='none',150);}
+    axis=null;moved=false;
+  },{passive:true});
+  el.addEventListener('click',()=>{if(!moved)doFlip();});
+}
+
+// LIST
+let ctxTargetIdx=null;
+function renderList(filter=''){
+  const list=document.getElementById('wordList');const all=getAllWords();list.innerHTML='';
+  const customStart=all.length-LS.custom().length;
+  all.forEach((w,i)=>{
+    if(filter&&!w.word.toLowerCase().includes(filter.toLowerCase())&&!w.definition.toLowerCase().includes(filter.toLowerCase()))return;
+    const s=STATUS[i];const isC=i>=customStart;
+    const item=document.createElement('div');
+    item.className='word-item'+(s==='ok'?' mastered':s==='ko'?' learning':isC?' custom-word':'');
+    item.innerHTML=`<div class="word-header"><div class="word-name">${w.word}</div><span class="word-badge ${s==='ok'?'badge-ok':s==='ko'?'badge-ko':isC?'badge-custom':'badge-new'}">${s==='ok'?'✓ Sus':s==='ko'?'↺ Revoir':isC?'✦ Perso':'· Nouveau'}</span></div><div class="word-body" id="wb-${i}"><div class="word-def">${w.definition}</div><div class="word-ex">${w.example}</div></div>`;
+
+    let timer=null,sx=0,sy=0,scrolled=false;
+    item.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY;scrolled=false;item.classList.add('pressing');timer=setTimeout(()=>{timer=null;if(!scrolled){item.classList.remove('pressing');showCtxMenu(i,item);}},600);},{passive:true});
+    item.addEventListener('touchmove',e=>{if(Math.abs(e.touches[0].clientX-sx)>8||Math.abs(e.touches[0].clientY-sy)>8){scrolled=true;if(timer){clearTimeout(timer);timer=null;}item.classList.remove('pressing');}},{passive:true});
+    item.addEventListener('touchend',()=>{item.classList.remove('pressing');if(timer!==null){clearTimeout(timer);timer=null;if(!scrolled){const b=document.getElementById('wb-'+i);if(b)b.classList.toggle('open');}}},{passive:true});
+    item.addEventListener('touchcancel',()=>{if(timer){clearTimeout(timer);timer=null;}item.classList.remove('pressing');},{passive:true});
+    item.addEventListener('click',()=>{const b=document.getElementById('wb-'+i);if(b)b.classList.toggle('open');});
+    item.addEventListener('contextmenu',e=>{e.preventDefault();showCtxMenu(i,item);});
+    list.appendChild(item);
+  });
+}
+function filterList(){renderList(document.getElementById('searchInput').value);}
+function showCtxMenu(idx,el){
+  ctxTargetIdx=idx;const menu=document.getElementById('ctxMenu');const rect=el.getBoundingClientRect();
+  menu.classList.add('open');document.getElementById('ctxOverlay').style.display='block';
+  const mh=menu.offsetHeight||90;let top=rect.top-mh-8;if(top<8)top=rect.bottom+8;
+  menu.style.top=Math.min(top,window.innerHeight-mh-8)+'px';menu.style.left=Math.max(8,rect.left)+'px';
+}
+function closeCtxMenu(){document.getElementById('ctxMenu').classList.remove('open');document.getElementById('ctxOverlay').style.display='none';ctxTargetIdx=null;}
+function confirmDelete(){
+  const all=getAllWords();const w=all[ctxTargetIdx];if(!w){closeCtxMenu();return;}
+  const name=w.word;closeCtxMenu();if(!confirm('Supprimer « '+name+' » ?'))return;
+  const customLen=LS.custom().length;const baseActiveLen=all.length-customLen;
+  if(ctxTargetIdx<baseActiveLen){
+    const deleted=LS.deleted();let orig=0,active=0;
+    for(let i=0;i<BASE_WORDS.length;i++){if(deleted.includes(i))continue;if(active===ctxTargetIdx){orig=i;break;}active++;}
+    deleted.push(orig);LS.saveDeleted(deleted);
+  }else{const ci=ctxTargetIdx-baseActiveLen;const c=LS.custom();c.splice(ci,1);LS.saveCustom(c);}
+  const ns={};Object.entries(STATUS).forEach(([k,v])=>{const ki=parseInt(k);if(ki<ctxTargetIdx)ns[ki]=v;else if(ki>ctxTargetIdx)ns[ki-1]=v;});
+  STATUS=ns;LS.saveStatus(STATUS);updateHeaderStats();renderList(document.getElementById('searchInput').value);fcAnimating=false;renderCard();
+}
+
+// QUIZ
+let quizIndex=0,quizOrder=[],quizScore=0,quizAnswered=false;
+function startQuiz(){const all=getAllWords();quizOrder=[...Array(all.length).keys()].sort(()=>Math.random()-.5);quizIndex=0;quizScore=0;renderQuiz();}
+function renderQuiz(){
+  const all=getAllWords();const wrap=document.getElementById('quizWrap');const qN=Math.min(10,all.length);
+  if(quizIndex>=qN){wrap.innerHTML=`<div class="quiz-result"><div class="quiz-label">Résultat</div><div class="result-big">${quizScore}/${qN}</div><div class="result-sub">${quizScore>=8?'🏆 Excellent !':quizScore>=5?'📈 Continue !':'💪 Revois les flashcards'}</div><button class="restart-btn" onclick="startQuiz()">Rejouer</button></div>`;return;}
+  const idx=quizOrder[quizIndex];const correct=all[idx];
+  const choices=[correct,...all.filter((_,i)=>i!==idx).sort(()=>Math.random()-.5).slice(0,3)].sort(()=>Math.random()-.5);
+  quizAnswered=false;
+  wrap.innerHTML=`<div class="quiz-question"><div class="quiz-label">Quelle est la définition de…</div><div class="quiz-word">${correct.word}</div></div><div class="quiz-choices">${choices.map((c,ci)=>`<button class="choice-btn" id="qc-${ci}" onclick="answerQuiz(${ci},${c===correct},${idx})">${c.definition}</button>`).join('')}</div><button class="quiz-next" id="quizNext" onclick="nextQuiz()">Question suivante →</button><div style="color:var(--muted);font-size:.72rem;text-align:center;margin-top:4px;">Question ${quizIndex+1}/${qN}</div>`;
+}
+function answerQuiz(ci,isCorrect,wordIdx){
+  if(quizAnswered)return;quizAnswered=true;const all=getAllWords();const btn=document.getElementById('qc-'+ci);
+  if(isCorrect){btn.classList.add('correct');quizScore++;STATUS[wordIdx]='ok';}
+  else{btn.classList.add('wrong-ans');STATUS[wordIdx]='ko';document.querySelectorAll('.choice-btn').forEach(b=>{if(b.textContent.trim()===all[wordIdx].definition)b.classList.add('correct');});}
+  document.querySelectorAll('.choice-btn').forEach(b=>b.disabled=true);document.getElementById('quizNext').classList.add('show');LS.saveStatus(STATUS);updateHeaderStats();
+}
+function nextQuiz(){quizIndex++;renderQuiz();}
+
+// SETTINGS
+function openSettings(){
+  document.getElementById('notifEnabled').checked=!!SETTINGS.notifEnabled;document.getElementById('notifInterval').value=SETTINGS.notifInterval||'60';document.getElementById('notifPrioKo').checked=!!SETTINGS.notifPrioKo;
+  document.getElementById('notifBanner').style.display=('Notification'in window&&Notification.permission==='default')?'flex':'none';
+  updateHeaderStats();document.getElementById('settingsOverlay').classList.add('open');
+}
+function closeSettingsOutside(e){if(e.target===document.getElementById('settingsOverlay'))document.getElementById('settingsOverlay').classList.remove('open');}
+function saveSettings(){SETTINGS.notifEnabled=document.getElementById('notifEnabled').checked;SETTINGS.notifInterval=document.getElementById('notifInterval').value;SETTINGS.notifPrioKo=document.getElementById('notifPrioKo').checked;LS.saveSettings(SETTINGS);scheduleNotifications();}
+
+// NOTIFICATIONS
+async function requestNotifPermission(){if(!('Notification'in window)){alert('Non supporté.');return;}await Notification.requestPermission();document.getElementById('notifBanner').style.display='none';scheduleNotifications();}
+function pickRandomWord(){const all=getAllWords();if(SETTINGS.notifPrioKo){const ko=all.filter((_,i)=>STATUS[i]==='ko');if(ko.length)return ko[Math.floor(Math.random()*ko.length)];}return all[Math.floor(Math.random()*all.length)];}
+function scheduleNotifications(){if(notifTimer){clearTimeout(notifTimer);notifTimer=null;}if(!SETTINGS.notifEnabled)return;if(!('Notification'in window)||Notification.permission!=='granted')return;const ms=(parseInt(SETTINGS.notifInterval)||60)*60*1000;const jitter=ms*0.2*(Math.random()*2-1);notifTimer=setTimeout(()=>{fireNotif();scheduleNotifications();},Math.max(5000,ms+jitter));}
+function fireNotif(){const w=pickRandomWord();if(!w)return;new Notification('📚 '+w.word,{body:w.definition+'\n« '+w.example+' »',icon:'./icon-192.png',tag:'vocab',renotify:true});}
+function sendTestNotif(){if(!('Notification'in window)){alert('Non supporté.');return;}if(Notification.permission==='default'){Notification.requestPermission().then(()=>{document.getElementById('notifBanner').style.display='none';if(Notification.permission==='granted')fireNotif();});return;}if(Notification.permission==='denied'){alert('Notifications bloquées. Active-les dans les paramètres du navigateur.');return;}fireNotif();}
+
+// ADD / RESET
+function addCustomWord(){
+  const word=document.getElementById('newWord').value.trim();const def=document.getElementById('newDef').value.trim();const ex=document.getElementById('newEx').value.trim();const fb=document.getElementById('addFeedback');
+  if(!word||!def){fb.textContent='⚠️ Mot et définition obligatoires.';fb.style.color='var(--red)';return;}
+  const c=LS.custom();c.push({word,definition:def,example:ex||'(pas d\'exemple fourni)'});LS.saveCustom(c);updateHeaderStats();
+  document.getElementById('newWord').value='';document.getElementById('newDef').value='';document.getElementById('newEx').value='';
+  fb.textContent='✓ « '+word+' » ajouté !';fb.style.color='var(--green)';setTimeout(()=>fb.textContent='',3000);fcAnimating=false;renderCard();
+}
+function resetProgress(){if(!confirm('Réinitialiser toute ta progression ?'))return;STATUS={};LS.saveStatus(STATUS);updateHeaderStats();fcAnimating=false;renderCard();}
+
+// INIT
+if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
+updateHeaderStats();
+initFC();
+bindCardTouch();
+scheduleNotifications();
+</script>
+</body>
+</html>
